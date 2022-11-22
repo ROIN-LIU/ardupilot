@@ -917,6 +917,7 @@ private:
     void publish_osd_info();
 #endif
 
+    //创建了Mode类的指针
     Mode *flightmode;
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
@@ -995,6 +996,7 @@ private:
 #endif
 
     // mode.cpp
+    //定义了一个 返回值为Mode类的指针 的方法 
     Mode *mode_from_mode_num(const Mode::Number mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 

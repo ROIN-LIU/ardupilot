@@ -8,6 +8,7 @@
 /*
   constructor for Mode object
  */
+//构造函数
 Mode::Mode(void) :
     g(copter.g),
     g2(copter.g2),
@@ -28,6 +29,9 @@ Mode::Mode(void) :
 float Mode::auto_takeoff_no_nav_alt_cm = 0;
 
 // return the static controller object corresponding to supplied mode
+//返回与提供的模式对应的静态控制器对象
+//本方法实质是返回某个飞行模式的类的指针
+//类的返回值为 Mode类的指针 实现的是Copter类下的mode_from_mode_num方法
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 {
     Mode *ret = nullptr;
@@ -180,25 +184,35 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
 
 
 // set_mode - change flight mode and perform any necessary initialisation
+//设置模式-改变飞行模式和执行任何必要的初始化
 // optional force parameter used to force the flight mode change (used only first time mode is set)
+//用于强制更改飞行模式的可选力参数（仅设置了首次模式）
 // returns true if mode was successfully set
+//若设置成功则返回true
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+//ACRO，稳定，ALTHOLD，着陆，漂移和运动始终可以成功设置，但应检查其他飞行模式的返回状态，并且调用者应适当处理故障
+//set_mode函数的实现
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
 
     // return immediately if we are already in the desired mode
+    //若是目标飞行模式与当前飞行模式相匹配,返回ture
     if (mode == control_mode) {
         control_mode_reason = reason;
         return true;
     }
-
+    
     Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
+    //若目标飞行模式未定义,返回false
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
+    //motos为Copter类下的成员,本质为指向AP_MotorsMulticopter的指针
+    //AP_MotorsMulticopter类为AP_Motors的子类,armed()方法为AP_Motors类下的成员
+    //motors->armed() 即通过指向子类的指针来访问父类的方法
     bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -235,11 +249,13 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     // (e.g. user arms in guided, raises throttle to 1300 (not enough to
     // trigger auto takeoff), then switches into manual):
     bool user_throttle = new_flightmode->has_manual_throttle();
+    //漂移模式?
 #if MODE_DRIFT_ENABLED == ENABLED
     if (new_flightmode == &mode_drift) {
         user_throttle = true;
     }
 #endif
+    //油门过高检查,未分析代码
     if (!ignore_checks &&
         ap.land_complete &&
         user_throttle &&
@@ -250,7 +266,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return false;
     }
 #endif
-
+    //飛信檢查,未分析代碼
     if (!ignore_checks &&
         new_flightmode->requires_GPS() &&
         !copter.position_ok()) {
@@ -258,7 +274,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
-
+    //飞行检查,未分析代码
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
@@ -266,9 +282,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     }
 
     // perform any cleanup required by previous flight mode
+    //执行先前的飞行模式要求的所有清理程序
     exit_mode(flightmode, new_flightmode);
 
     // update flight mode
+    //更新飞行模式,实质是将新飞行模式的地址赋予给飞行模式的指针
     flightmode = new_flightmode;
     control_mode = mode;
     control_mode_reason = reason;

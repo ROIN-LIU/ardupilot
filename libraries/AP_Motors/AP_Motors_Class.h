@@ -72,6 +72,7 @@ public:
     bool                initialised_ok() const { return _flags.initialised_ok; }
 
     // arm, disarm or check status status of motors
+    //电机 解锁,锁定,状态检查 的检查
     bool                armed() const { return _flags.armed; }
     void                armed(bool arm);
 
